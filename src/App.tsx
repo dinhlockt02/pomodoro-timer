@@ -1,110 +1,62 @@
 import Header from "./components/Header.tsx";
 import PhaseChip from "./components/PhaseChip.tsx";
 import CircularProgressBar from "./components/CircularProgressBar.tsx";
-import {RefObject, useEffect, useRef, useState} from "react";
 import Button from "./components/Button.tsx";
-import {Mode} from "./constants/modes.tsx";
+import {getTheme, Mode} from "./constants/modes.tsx";
+import {formatClockTime} from "./common/time.tsx";
+import useProgress from "./hook/useProgress.tsx";
+import useMode from "./hook/useMode.tsx";
+import {useEffect, useState} from "react";
 
-const MAX_TIME = 1500;
+const ACTIVE_TIME = 25 * 60;
+const SHORT_BREAK_TIME = 5 * 60;
+const LONG_BREAK_TIME = 15 * 60;
 
-function formatTime(seconds: number): string {
-    const result = []
-    if (seconds >= 3600) {
-        const hour = Math.floor(seconds / 3600)
-        if (hour < 10) {
-            result.push('0' + hour)
-        } else {
-            result.push(hour.toString());
-        }
-        seconds = seconds % 3600;
-    }
-
-    if (seconds >= 60) {
-        const minute = Math.floor(seconds / 60);
-        if (minute < 10) {
-            result.push('0' + minute)
-        } else {
-            result.push(minute.toString());
-        }
-        result.push();
-        seconds = seconds % 60;
-    }
-
-    if (seconds < 10) {
-        result.push('0' + seconds)
-    } else {
-        result.push(seconds.toString());
-    }
-
-    return result.join(':')
-}
-
-function getTheme(mode: Mode): string | undefined {
-    switch (mode) {
-        case Mode.LONG_BREAK:
-            return "long-break";
-        case Mode.SHORT_BREAK:
-            return "short-break";
-    }
-}
 
 function App() {
-    const [progress, setProgress] = useState(MAX_TIME);
-    const [mode, setMode] = useState(Mode.ACTIVE);
-    const [isRunning, setIsRunning] = useState(false);
-    const intervalRef: RefObject<number> = useRef(0);
+    const [maxTime, setMaxTime] = useState<number>(ACTIVE_TIME);
+    const [progress, isRunning, toggleProgress, resetProgress] = useProgress(maxTime);
+    const [mode, round, toggleMode] = useMode(Mode.ACTIVE, 4)
 
     useEffect(() => {
         if (progress == 0) {
-            setIsRunning(false);
-            switch (mode) {
-                case Mode.LONG_BREAK, Mode.SHORT_BREAK:
-                    setMode(Mode.ACTIVE);
-                    break;
-                case Mode.ACTIVE:
-                    setMode(Mode.SHORT_BREAK);
-            }
+            toggleMode();
+            toggleProgress()
         }
     }, [progress])
 
     useEffect(() => {
-        if (isRunning) {
-            intervalRef.current = setInterval(() => {
-                setProgress((prev) => prev - 1);
-            }, 10)
-        } else {
-            clearInterval(intervalRef.current);
+        switch (mode) {
+            case Mode.LONG_BREAK:
+                setMaxTime(LONG_BREAK_TIME);
+                break;
+            case Mode.SHORT_BREAK:
+                setMaxTime(SHORT_BREAK_TIME);
+                break;
+            case Mode.ACTIVE:
+                setMaxTime(ACTIVE_TIME);
+                break;
         }
+    }, [mode]);
 
-
-        return () => {
-            // clears timeout before running the new effect
-            clearInterval(intervalRef.current);
-            intervalRef.current = 0;
-        };
-    }, [isRunning])
-
+    useEffect(() => {
+        resetProgress(maxTime)
+    }, [maxTime]);
 
     return <div className={getTheme(mode)}>
         <Header/>
         <section className="flex items-center justify-center w-full gap-4 my-8">
-            <PhaseChip isActive={mode == Mode.ACTIVE} onClick={() => {
-                setMode(Mode.ACTIVE);
-            }}>Pomodoro</PhaseChip>
-            <PhaseChip isActive={mode == Mode.SHORT_BREAK} onClick={() => {
-                setMode(Mode.SHORT_BREAK);
-            }}>Short break</PhaseChip>
-            <PhaseChip isActive={mode == Mode.LONG_BREAK} onClick={() => {
-                setMode(Mode.LONG_BREAK);
-            }}>Long break</PhaseChip>
+            <PhaseChip isActive={mode == Mode.ACTIVE}>Pomodoro</PhaseChip>
+            <PhaseChip isActive={mode == Mode.SHORT_BREAK}>Short break</PhaseChip>
+            <PhaseChip isActive={mode == Mode.LONG_BREAK}>Long break</PhaseChip>
         </section>
         <section className="flex items-center justify-center w-full gap-4 my-8">
-            <CircularProgressBar progress={progress / MAX_TIME * 100} text={formatTime(progress)}/>
+            <CircularProgressBar progress={progress / maxTime * 100} text={formatClockTime(progress)} subtext={"#" + round}/>
         </section>
         <section className="flex items-center justify-center w-full gap-4 my-8">
-            <Button onClick={() => setIsRunning(true)}>Start</Button>
-            <Button onClick={() => setIsRunning(false)}>Pause</Button>
-            <Button onClick={() => setProgress(MAX_TIME)}>Restart</Button>
+
+            <Button onClick={() => toggleProgress()}>{ !isRunning ? "Start" : "Pause"}</Button>
+            <Button onClick={() => resetProgress(maxTime)}>Restart</Button>
         </section>
     </div>
 }

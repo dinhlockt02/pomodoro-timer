@@ -2,10 +2,11 @@ interface CircularProgressBarProps {
     size?: number;
     progress: number;
     text?: string | number;
+    subtext?: string | number;
 
 }
 
-export default function CircularProgressBar({size = 30, progress, text}: CircularProgressBarProps) {
+export default function CircularProgressBar({size = 30, progress, text, subtext}: CircularProgressBarProps) {
     if (progress <= 0) {
         progress = 0;
     }
@@ -20,6 +21,9 @@ export default function CircularProgressBar({size = 30, progress, text}: Circula
             (!!text && (<g transform="translate(80 80)" className="origin-center">
             <text textAnchor="middle" dominantBaseline="middle" className="font-lobster">{text}</text>
             </g>)
+            (!!subtext && (<g transform="translate(80 95)" className="origin-center">
+            <text textAnchor="middle" dominantBaseline="middle" className="font-lobster text-xs">{subtext}</text>
+        </g>)
         </svg>
     );
 }
