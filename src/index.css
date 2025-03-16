@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-primary: #FF6B6B;
+  --color-cream: #FFF8EE;
+
+  --font-lobster: "Lobster", sans-serif;
+}
+
+.short-break {
+  --color-primary: #4D96FF;
+}
+
+.long-break {
+  --color-primary: #6BCB77;
+}
