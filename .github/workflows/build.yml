@@ -35,6 +35,7 @@ jobs:
           git rm -rf .
           mv dist/* .
           rm -rf dist
+          rm -rf node_modules
           git add .
           git commit -m "Deploy latest build"
           git push --force origin deployment
